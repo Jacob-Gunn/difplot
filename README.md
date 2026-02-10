@@ -171,9 +171,6 @@ Returns:
 ------------------------------------------------------------
 DESIGN NOTES
 ------------------------------------------------------------
-
-- This module intentionally avoids object-oriented design.
-- Functions are explicit and verbose by design for transparency.
 - Several functions assume familiarity with matplotlib internals.
 - Some optional features (e.g. Mline, top axis transforms) rely
   on external global variables and are intended for specialised
