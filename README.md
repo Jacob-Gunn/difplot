@@ -1,189 +1,184 @@
-------------------------------------------------------------
-DEPENDENCIES
-------------------------------------------------------------
+# difplot
+
+A lightweight plotting utility built on top of `matplotlib` for
+visualizing differential equation solutions and structured scientific
+data.\
+The module provides:
+
+-   A configurable plotting wrapper (`difplot`) for high-quality
+    publication-style figures.
+-   A behavior-preserving downsampling routine (`sample`) for large 2D
+    datasets.
+
+------------------------------------------------------------------------
+
+## Installation
+
+This module depends on:
+
+-   numpy
+-   matplotlib
+
+Install dependencies via:
+
+``` bash
+pip install numpy matplotlib
+```
+
+Place `difplot.py` in your project directory and import:
+
+``` python
+from difplot import difplot, sample
+```
+
+------------------------------------------------------------------------
+
+## difplot
+
+### Purpose
+
+`difplot` is a high-level wrapper around matplotlib designed for
+scientific plotting of:
+
+-   Multiple curves
+-   Contour overlays
+-   Filled regions
+-   Log/linear scaling
+-   Publication-style formatting
+
+Figures are automatically exported as PDF.
+
+------------------------------------------------------------------------
+
+### Basic Usage
+
+``` python
+import numpy as np
+from difplot_v2 import difplot
+
+x = np.linspace(0, 10, 1000)
+y1 = np.sin(x)
+y2 = np.cos(x)
+
+difplot(
+    xlist=[x, x],
+    ylist=[y1, y2],
+    xlabel="x",
+    ylabel=["f(x)", "sin(x)", "cos(x)"],
+    name="example_plot"
+)
+```
+
+This generates:
+
+    example_plot.pdf
+
+------------------------------------------------------------------------
+
+### Core Parameters
 
 Required:
-- Python 3.x
-- numpy
-- matplotlib
 
-Optional / implicit:
-- LaTeX installation (only required if usetex=True or LaTeX
-  rendering is enabled in colplot)
+-   `xlist`: list of x-arrays
+-   `ylist`: list of y-arrays
+-   `xlabel`: string
+-   `ylabel`: string or list
 
-No external or non-standard Python packages are required.
+Common optional controls:
 
-
-------------------------------------------------------------
-MODULE OVERVIEW
-------------------------------------------------------------
-
-The module provides the following main groups of functionality:
-
-1. Global matplotlib configuration
-2. Line plotting helpers (single and subplots)
-3. Contour and colour plotting helpers
-4. File reading utilities for parameter scans
-5. Adaptive data downsampling
-
-
-------------------------------------------------------------
-FUNCTIONS
-------------------------------------------------------------
-
--------------------------
-_configure_rcparams(...)
--------------------------
-Internal helper to configure matplotlib rcParams in a consistent
-way across all plotting functions.
-
-Controls:
-- Font size and family
-- Axis border width
-- Tick size, direction, and placement
-- Optional LaTeX rendering
-
-Users typically do not need to call this directly.
-
-
--------------------------
-difplot(...)
--------------------------
-Primary line-plotting function.
-
-Designed for plotting one or more y(x) datasets with:
-- Automatic styling
-- Optional random or colormap-based colouring
-- Log or linear axes
-- Axis scaling factors
-- Legends, vertical lines, annotations, and shaded regions
-
-Typical use case:
-Plotting solutions of differential equations or multiple
-parameter curves on a single axis.
+-   `figx`, `figy`: figure size
+-   `fontSize`: base font size
+-   `DPI`: export resolution
+-   `color`: list or `"random"`
+-   `linestyle`: list of line styles
+-   `xscale`, `yscale`: `"linear"` or `"log"`
+-   `xspan`, `yspan`: axis limits
+-   `vertical`: vertical reference lines
+-   `text`: annotations
+-   `fill`: shaded regions
+-   `contours`: contour overlays
+-   `usetex`: enable LaTeX rendering
 
 Output:
-- Saves figure as PDF
 
+The figure is saved as:
 
--------------------------
-difSubPlot(...)
--------------------------
-Creates a two-panel vertical subplot with similar behaviour
-to difplot, but with reduced feature set.
+    <path><name>.pdf
 
-Useful for:
-- Comparing two related datasets
-- Showing different regimes or parameter ranges
+------------------------------------------------------------------------
 
-Output:
-- Saves figure as JPEG
+## Contour Overlays
 
+Contours can be added using:
 
--------------------------
-contplot(...)
--------------------------
-Contour-only plotting utility.
+``` python
+difplot(
+    xlist=X,
+    ylist=Y,
+    zlist=Z,
+    contours=(levels, colors, linestyles),
+    label_contours=[True],
+    zlabel="z"
+)
+```
 
 Supports:
-- Multiple contour levels
-- Overlaid contour sets
-- Inline or legend-based labelling
-- Optional return of contour vertices for post-processing
 
-Typical use case:
-Threshold curves, phase boundaries, or exclusion contours.
+-   Multiple Z datasets
+-   Per-level styling
+-   Selective labeling
 
-Output:
-- Saves figure as PDF
-- Optionally returns contour point arrays
+------------------------------------------------------------------------
 
+## sample
 
--------------------------
-colplot(...)
--------------------------
-Colour (pcolor) plot with overlaid contours.
+### Purpose
 
-Supports:
-- Linear or logarithmic colour normalisation
-- Multiple overlaid contour families
-- Legend handling for contours
-- LaTeX-rendered labels
+`sample` reduces a dense 2D dataset `[x, y]` to `N` representative
+points while:
 
-Typical use case:
-Heatmaps, density plots, or 2D parameter scans.
+-   Preserving steep gradients
+-   Enforcing full x-range coverage
+-   Respecting maximum spacing constraints
 
-Output:
-- Saves figure as PDF
-- Optionally returns contour point arrays
+------------------------------------------------------------------------
 
+### Usage
 
--------------------------
-read(...)
--------------------------
-Bulk file reader for multi-dimensional datasets.
+``` python
+import numpy as np
+from difplot_v2 import sample
 
-Designed for directory structures where filenames encode a
-parameter value (e.g. mass, field strength).
+data = np.column_stack((x, y))
+reduced = sample(data, N=200)
+```
 
-Features:
-- Automatic filename parsing
-- Optional reference checking
-- NaN detection
-- Sorting by parameter value
+------------------------------------------------------------------------
+
+### Parameters
+
+-   `data`: array shape (M, 2)
+-   `N`: target number of points
+-   `tol`: adaptive slope tolerance
+-   `maxD`: maximum spacing in x
+-   `max_iter`: iteration limit
 
 Returns:
-- [parameter_values, data_arrays]
 
+    np.ndarray of shape (N, 2)
 
--------------------------
-read1D(...)
--------------------------
-Simplified reader for scalar or 1D data stored in multiple files.
+------------------------------------------------------------------------
 
-Typical use case:
-Reading single output values per parameter point.
+## Design Philosophy
 
-Returns:
-- [values, parameter_values]
+-   Minimal global rc configuration
+-   Publication-oriented defaults
+-   Explicit control over styling
+-   Flexible contour normalization
+-   Deterministic PDF export
 
+------------------------------------------------------------------------
 
--------------------------
-sample(...)
--------------------------
-Adaptive downsampling routine for 2D data [x, y].
+## License
 
-Purpose:
-Reduce the number of points while preserving:
-- Overall behaviour
-- Steep gradients
-- Full x-range coverage
-- Maximum allowed spacing
-
-Useful for:
-- Plotting very large datasets
-- Reducing storage or rendering cost
-
-Returns:
-- Downsampled array of shape (N, 2)
-
-
-------------------------------------------------------------
-DESIGN NOTES
-------------------------------------------------------------
-- Several functions assume familiarity with matplotlib internals.
-- Some optional features (e.g. Mline, top axis transforms) rely
-  on external global variables and are intended for specialised
-  workflows.
-
-
-------------------------------------------------------------
-OUTPUT FORMATS
-------------------------------------------------------------
-
-- Line plots: PDF
-- Contour plots: PDF
-- Colour plots: PDF
-- Subplots: JPEG
-
-All output paths and filenames are user-configurable.
+Use and modify freely within your research or applications.
