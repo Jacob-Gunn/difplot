@@ -85,7 +85,8 @@ def difplot(xlist,
             label_contours=False,
             labelled_contours=None,
             zlabel="z",
-            labelSize=12,):
+            labelSize=12,
+            scatter=None): 
     '''plots a solved differential equation'''
     '''======PARAMETERS======'''
     #ylist takes an array of arrays, each entry is a list of yvalues to be plotted. Same for xlist
@@ -96,7 +97,6 @@ def difplot(xlist,
     #xspan and yspan control the ylims and xlims, if left blank, set automatically
     #color takes either an array of colors, or the string 'random' which plots each line with a random color
 
-    xl = ''
     _configure_rcparams(fontSize=fontSize, font=font, borderWidth=borderWidth, tickSize=tickSize, tickDirection=tickDirection, usetex=usetex, xtop=True, ytop=True)
     if linestyle is None:
         linestyle = ["solid"] * len(ylist)
@@ -117,7 +117,8 @@ def difplot(xlist,
         leg = False
     if isinstance(ylabel, (list, tuple, np.ndarray)):
         labely = True
-        ylabels = [ylabel[i] for i in range(0,len(ylist))]
+        ylabels = [ylabel[i] for i in range(1,len(ylist)+1)]
+        axs.set_ylabel(ylabel[0],fontsize =  fontSize,labelpad = 25)
    
     if not labely:
         for l, yy in enumerate(ylist):
@@ -126,7 +127,8 @@ def difplot(xlist,
         for l, yy in enumerate(ylist):
             axs.plot(xlist[l], yy, color=color[l], label=(ylabels[l]), linestyle=linestyle[l], linewidth=lineWidth)
 
-    axs.set_xlabel(xlabel+xl,fontsize =  fontSize,labelpad = 25)
+    axs.set_xlabel(xlabel,fontsize =  fontSize,labelpad = 25)
+    
     
     if xspan:
         axs.set_xlim(xspan[0], xspan[1])
@@ -138,10 +140,9 @@ def difplot(xlist,
     axs.set_yscale(yscale)
     
     axs.minorticks_on()
-
     
-    if leg:
-        plt.legend(ylabels, loc=leg[0], fontsize=leg[1])
+    points = []
+    
     if vertical != None:
         for v in vertical:
             plt.axvline(x=v[0], ymin=v[1], ymax=v[2],color=v[3],linestyle = v[4])
@@ -156,7 +157,9 @@ def difplot(xlist,
         tick.set_y(-0.01)  # Adjust y-position of the tick labels
 
         
-        
+    # ==========================================================
+    # Optional fill overlay
+    # ==========================================================    
     for f in fill:
         if f[2] == None:
             # Create a polygon from the contour line
@@ -242,6 +245,7 @@ def difplot(xlist,
         # Draw contours
         # -------------------------
         for i, z in enumerate(zlist):
+            temppoints = []
 
             for j, level in enumerate(levels[i]):
                 val = float(level)
@@ -266,6 +270,9 @@ def difplot(xlist,
                     colors=[c],
                     linestyles=[ls]
                     )
+                for seglist in cont.allsegs:
+                    for seg in seglist:
+                        temppoints.append(seg)
 
                 if label_contours[i]:
 
@@ -280,10 +287,246 @@ def difplot(xlist,
                             inline=True,
                             fontsize=labelSize
                         )
+            points.append(temppoints)
+
+     # ==========================================================
+    # Optional scatter overlay
+    # ==========================================================
+    if scatter is not None:
+
+        # Normalize to list of scatter sets
+        if not isinstance(scatter[0], (list, tuple, np.ndarray)):
+            scatter = [scatter]
+
+        marker_map = {
+            'circle': 'o',
+            'square': 's',
+            'triangle': '^',
+            'triangle_down': 'v',
+            'diamond': 'D',
+            'star': '*',
+            'cross': 'x',
+            'plus': '+'
+        }
+
+        for s in scatter:
+
+            if len(s) < 5:
+                continue
+
+            xpoints = s[0]
+            ypoints = s[1]
+            symbol  = s[2]
+            scolor  = s[3]
+            ssize   = s[4]
+            slabel  = s[5] if len(s) > 5 else 'Scatter points'
+
+            marker = marker_map.get(symbol, symbol)
+
+            axs.scatter(
+                xpoints,
+                ypoints,
+                marker=marker,
+                c=scolor,
+                s=ssize,
+                label=slabel
+            )
+    
+    if leg:
+        plt.legend(loc=leg[0], fontsize=leg[1])
+
+    plt.savefig( path + name +  '.pdf',dpi=DPI, bbox_inches = "tight")
+    return points
+    
+def difSubPlot(ylist,xlist,xlabel,ylabels,figx = 15,figy = 10,fontSize=40,tickDirection='in',tickSize=1,font='serif',lineWidth=1.5,borderWidth = 3,color='random',xscale='linear',yscale='linear',name='dif.png',xspan=[],yspan=[],linestyle=None,path='Figures/',top = False,Loc='best',vertical = None,leg=['best','10'],xminor=0,yminor=0,text=None,numTicksy=50,numTicksx = 50):
+    '''plots a subplot with same arguments as difplot except no option to scale, Mline, flip or cmap'''
+    _configure_rcparams(fontSize=fontSize, font=font, borderWidth=borderWidth, tickSize=tickSize, tickDirection=tickDirection, usetex=False, xtop=True, ytop=True)
+    if linestyle is None:
+        linestyle = [["solid"] * len(ylist[0]), ["solid"] * len(ylist[1])]
+    if color == 'random':
+        color = [
+            [f"#{random.randint(0, 0xFFFFFF):06X}" for _ in range(len(ylist[0]))],
+            [f"#{random.randint(0, 0xFFFFFF):06X}" for _ in range(len(ylist[1]))],
+        ]
+    fig, axs = plt.subplots(2,figsize=[figx,figy])
+    if top != False:
+        ax2 = axs.twiny()  
+    for i in range(0,len(ylabels)):
+        if len(ylabels[i])==1:
+            axs[i].plot(xlist[i][0],ylist[i][0],color=color[i][0],label=(ylabels[i][0]+' vs ' + xlabel),linestyle=linestyle[i][0],linewidth = lineWidth)
+            if top != False:
+                ax2.plot(xlist[i][0],ylist[i][0],color='None',linestyle=linestyle[i][0],linewidth = lineWidth)
+        else:
+            for l in range(0 ,len(ylist[i])):
+                if l > len(ylabels[i])-2:
+                    axs[i].plot(xlist[i][l],ylist[i][l],color=color[i][l],linestyle=linestyle[i][l],linewidth = lineWidth)
+                else:
+                    axs[i].plot(xlist[i][l],ylist[i][l],color=color[i][l],label=ylabels[i][l+1],linestyle=linestyle[i][l],linewidth = lineWidth)
+                if top != False:
+                    ax2.plot(xlist[i][l],ylist[i][l],color='None',linewidth = lineWidth)
+    axs[0].set_xlabel(xlabel[0],fontsize =  fontSize)
+    axs[0].set_ylabel(ylabels[0],fontsize=fontSize)
+    axs[1].set_xlabel(xlabel[1],fontsize =  fontSize)
+    axs[1].set_ylabel(ylabels[1],fontsize=fontSize)
+    if xspan !=[]:
+        axs[0].set_xlim(xspan[0][0],xspan[0][1])
+        axs[1].set_xlim(xspan[1][0],xspan[1][1])
+    if yspan !=[]:
+        axs[0].set_ylim(yspan[0][0],yspan[0][1])  
+        axs[1].set_ylim(yspan[1][0],yspan[1][1])  
+    axs[0].set_xscale(xscale)
+    axs[0].set_yscale(yscale)
+    axs[1].set_xscale(xscale)
+    axs[1].set_yscale(yscale)
+    
+    if np.size(ylabels) != 1:
+        ylabels[0] = [ylabels[0][i] for i in range(1,np.size(ylabels[0]))]
+        ylabels[1] = [ylabels[1][i] for i in range(1,np.size(ylabels[1]))]
+    if leg != False:
+        axs[0].legend(ylabels[0],loc=leg[0][0],fontsize=leg[0][1])
+        axs[1].legend(ylabels[1],loc=leg[1][0],fontsize=leg[1][1])
+    if vertical != None:
+        for v in vertical[0]:
+            axs[0].axvline(x=v[0], ymin=v[1], ymax=v[2],color=v[3],linestyle = v[4])
+        for v in vertical[1]:
+            axs[1].axvline(x=v[0], ymin=v[1], ymax=v[2],color=v[3],linestyle = v[4])
+    if text != None:
+        for t in text[0]:
+            axs[0].text(t[0],t[1],t[2],rotation=t[4],color = t[3],size=t[5])
+        for t in text[1]:
+            axs[0].text(t[0],t[1],t[2],rotation=t[4],color = t[3],size=t[5])
+    plt.savefig(path + name + '.jpeg')
+    
 
     
 
-    plt.savefig( path + name +  '.pdf',dpi=DPI, bbox_inches = "tight")
+    
+    
+def colplot(xlist,ylist,zlist,xlabel,ylabel,zlabel,figx = 15,figy = 10,vmax=0,vmin= 0,fontSize=20,contours = None,zlist2 = [],alt = ['None'],tickDirection='in',tickSize=1,font='serif',lineWidth=1.5,borderWidth = 3,color='random',cmap='PuBu_r',xscale='linear',yscale='linear',name='dif.png',xspan=[],yspan=[],linestyle=None,path='Figures/',top = False,Loc='best',vertical = None,leg=['best','10'],text=None,logColors=True,lines=[],inLine = False,legend_boolean = None,returnPoints = False):
+    '''plots a subplot with same arguments as difplot except no option to scale, Mline, flip or cmap'''
+    plt.rcParams.update({'font.size': fontSize,'font.family':font})
+    plt.rcParams['axes.linewidth'] = borderWidth
+    plt.rcParams.update({
+    "text.usetex": True,             # Enable LaTeX rendering
+    "font.family": "serif",          # Use a serif font by default
+    "text.latex.preamble": r"\usepackage{amsmath}",  # Optional, for advanced math formatting
+})
+
+    #x ticks dimension
+    plt.rcParams['xtick.major.size'] = 12*tickSize
+    plt.rcParams['xtick.major.width'] = 2*tickSize
+    plt.rcParams['xtick.minor.size'] = 8*tickSize
+    plt.rcParams['xtick.minor.width'] = 2*tickSize
+    
+    
+    
+    #y ticks dimension
+    plt.rcParams['ytick.major.size'] = 12*tickSize
+    plt.rcParams['ytick.major.width'] = 2*tickSize
+    plt.rcParams['ytick.minor.size'] = 8*tickSize
+    plt.rcParams['ytick.minor.width'] = 2*tickSize
+    
+    
+    
+    #tick direction
+    plt.rcParams['xtick.direction'] = tickDirection
+    plt.rcParams['ytick.direction'] = tickDirection
+    
+    plt.rcParams['xtick.labelsize'] = fontSize
+    plt.rcParams['ytick.labelsize'] = fontSize
+    
+    
+    
+    #other options
+    plt.rcParams['xtick.top'] = True
+    plt.rcParams['ytick.right'] = True
+    plt.rcParams['axes.unicode_minus'] = False
+    contour_points = []
+    
+    if legend_boolean is None:
+        legend_boolean = [True] * len(contours[0][1])
+
+    legend_labels, legend_lines = [], []
+    fig, ax = plt.subplots(1, 1, figsize=[figx, figy])
+    if logColors:
+        if vmax != 0 and vmin != 0:
+            Norm = colors.LogNorm(vmax=vmax, vmin=vmin)
+        else:
+            Norm = colors.LogNorm()
+    else:
+        if vmax != 0 and vmin != 0:
+            Norm = colors.Normalize(vmax=vmax, vmin=vmin)
+        else:
+            Norm = colors.Normalize()
+
+    pcm = ax.pcolor(xlist, ylist, zlist, cmap=cmap, shading='auto', norm=Norm)
+    
+    for C in contours:
+        cont = ax.contour(xlist,ylist,zlist,levels=[C[0]],linestyles = C[2],colors = C[1][0],linewidths = lineWidth)
+        if inLine == True:
+            ax.clabel(cont, inline=True, fontsize=leg[1],fmt = zlabel)
+        elif legend_boolean[0] == True:
+            legend_lines.append(Line2D([0], [0], color=C[1][0], linestyle=C[2], linewidth=lineWidth))
+            legend_labels.append(zlabel)
+        if returnPoints == True:
+            for collection in cont.collections:
+                for path in collection.get_paths():
+                    contour_points.append(path.vertices)
+    
+        for j in range(0,len(zlist2)):
+            cont2 = ax.contour(xlist,ylist,zlist2[j],levels=[C[0]],linestyles = C[j+3],colors = C[1][j+1])    
+            if inLine == True:
+                ax.clabel(cont2, inline=inLine, fontsize=leg[1],fmt = leg[2][j])
+            elif legend_boolean[j + 1] == True:
+                legend_lines.append(Line2D([0], [0], color=C[1][j + 1], linestyle=C[j+ 3], linewidth=lineWidth))
+                legend_labels.append(leg[2][j])
+            if returnPoints == True:
+                for collection in cont2.collections:
+                    for path in collection.get_paths():
+                        contour_points.append(path.vertices)
+        
+    ax.legend(legend_lines, legend_labels,loc = leg[0],fontsize = leg[1])
+    ax.minorticks_on()   
+ 
+    if xscale == 'log':
+        ax.set_xscale(xscale)
+        ax.xaxis.set_minor_locator(LogLocator())
+    
+    if yscale == 'log':
+        ax.set_yscale(yscale)
+        ax.xaxis.set_minor_locator(LogLocator())
+
+        
+        
+    ax.set_xlabel(xlabel,fontsize =  fontSize)
+    ax.set_ylabel(ylabel,fontsize =  fontSize)
+    
+    
+    if xspan !=[]:
+        ax.set_xlim(xspan[0],xspan[1])
+    if yspan !=[]:
+        ax.set_ylim(yspan[0],yspan[1])   
+
+
+    if text != None:
+        for t in text:
+            ax.text(t[0],t[1],t[2],rotation=t[4],color = t[3],size = t[5])
+    for l in lines:
+        ax.plot(l[0],l[1],color=l[2],linestyle=l[3])
+    if alt != ['None']:
+        for a in alt:
+            ax.contour(a[0],a[1],a[2],levels=[a[3]],colors = a[4],linestyles = a[5],linewidths = a[6])
+    if vertical != None:
+        for v in vertical:
+            plt.axvline(x=v[0], ymin=v[1], ymax=v[2],color=v[3],linestyle = v[4])
+    
+    for tick in ax.get_xticklabels(minor = False):
+        tick.set_y(-0.01)  # Adjust y-position of the tick labels
+
+    if returnPoints == True:
+        return contour_points
+    else: 
+        plt.savefig(path + name + '.pdf')
     
 
 
