@@ -310,9 +310,6 @@ def difplot(xlist,
         }
 
         for s in scatter:
-            if len(s) < 5:
-                continue
-
             xpoints = s[0]
             ypoints = s[1]
             symbol  = s[2]
@@ -324,8 +321,8 @@ def difplot(xlist,
 
             marker = marker_map.get(symbol, symbol)
 
-        if xerr is not None or yerr is not None:
-            axs.errorbar(
+            if xerr is not None or yerr is not None:
+                axs.errorbar(
                 xpoints, ypoints,
                 xerr=xerr, yerr=yerr,
                 fmt=marker,
@@ -336,8 +333,8 @@ def difplot(xlist,
                 elinewidth=1,
                 label=slabel
             )
-        else:
-            axs.scatter(
+            else:
+                axs.scatter(
                 xpoints, ypoints,
                 marker=marker,
                 c=scolor,
