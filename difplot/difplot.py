@@ -310,40 +310,40 @@ def difplot(xlist,
         }
 
         for s in scatter:
-    if len(s) < 5:
-        continue
+            if len(s) < 5:
+                continue
 
-    xpoints = s[0]
-    ypoints = s[1]
-    symbol  = s[2]
-    scolor  = s[3]
-    ssize   = s[4]
-    slabel  = s[5] if len(s) > 5 else 'Scatter points'
-    xerr    = s[6] if len(s) > 6 else None
-    yerr    = s[7] if len(s) > 7 else None
+            xpoints = s[0]
+            ypoints = s[1]
+            symbol  = s[2]
+            scolor  = s[3]
+            ssize   = s[4]
+            slabel  = s[5] if len(s) > 5 else 'Scatter points'
+            xerr    = s[6] if len(s) > 6 else None
+            yerr    = s[7] if len(s) > 7 else None
 
-    marker = marker_map.get(symbol, symbol)
+            marker = marker_map.get(symbol, symbol)
 
-    if xerr is not None or yerr is not None:
-        axs.errorbar(
-            xpoints, ypoints,
-            xerr=xerr, yerr=yerr,
-            fmt=marker,
-            color=scolor,
-            markersize=np.sqrt(ssize),   # errorbar uses pts, scatter uses pts²
-            capsize=4,
-            capthick=1,
-            elinewidth=1,
-            label=slabel
-        )
-    else:
-        axs.scatter(
-            xpoints, ypoints,
-            marker=marker,
-            c=scolor,
-            s=ssize,
-            label=slabel
-        )
+        if xerr is not None or yerr is not None:
+            axs.errorbar(
+                xpoints, ypoints,
+                xerr=xerr, yerr=yerr,
+                fmt=marker,
+                color=scolor,
+                markersize=np.sqrt(ssize),   # errorbar uses pts, scatter uses pts²
+                capsize=4,
+                capthick=1,
+                elinewidth=1,
+                label=slabel
+            )
+        else:
+            axs.scatter(
+                xpoints, ypoints,
+                marker=marker,
+                c=scolor,
+                s=ssize,
+                label=slabel
+            )
     
     if leg:
         plt.legend(loc=leg[0], fontsize=leg[1])
